@@ -18,6 +18,27 @@ def equal_gain_combining(channel_file: str = "data/channels.npy") -> float:
     return gain
 
 
+def beam_steering_codebook(channel_file: str = "data/channels.npy", \
+                           N_p: np.int8 = 5) -> float:
+    """
+    Return array gain for certain channel using weights from beam-steering
+    codebook design. Weight vector is got by pure Exhaustive Search method.
+    """
+    H = np.load(channel_file)
+    
+    # create codebook
+    N_phases = np.power(2, N_p)
+    N_elements = len(H)
+    
+    W = np.array([[np.exp(1j * np.pi * m * np.sin(2 * np.pi * k / N_phases)) \
+                   for k in range(N_phases)] for m in range(N_elements)], dtype = np.complex128)
+        
+    # exhaustive search
+    gain = np.max(np.power(np.absolute(np.matmul(W.conj().T, H)), 2))
+    
+    return gain
+
+
 def plot_results(log_folder: str = "logs/A2C", \
                  filename: str = "progress.csv", \
                  yaxis: str = "train/entropy_loss", \
@@ -66,6 +87,10 @@ def plot_beamforming_gains(log_folder: str = "logs/A2C", \
     EGC_gain = equal_gain_combining(channel_file)
     EGC_gains = np.full_like(timesteps, EGC_gain, dtype = float)
     
+    # Compute beam-steering codebook estimation for comparing
+    BSC_gain = beam_steering_codebook(channel_file, N_p = 6)
+    BSC_gains = np.full_like(timesteps, BSC_gain, dtype = float)
+    
     # xticks processing
     x_sticks = np.arange(0, timesteps[-1] + 1, step = 10000)
     x_labels = [str(i) + r"$\cdot{10}^{4}$" for i in range(1, len(x_sticks))]
@@ -73,14 +98,15 @@ def plot_beamforming_gains(log_folder: str = "logs/A2C", \
     
     figsize(10, 4)
     plt.plot(timesteps, gains, color = 'k', alpha = 0.8, lw = 1.5)
-    plt.plot(timesteps, EGC_gains, color = 'b', alpha = 0.8, lw = 1.5)
+    plt.plot(timesteps, EGC_gains, color = 'b', linestyle = "dashed", alpha = 0.8, lw = 1.5)
+    plt.plot(timesteps, BSC_gains, color = 'g', linestyle = "dashed", alpha = 0.8, lw = 1.5)
     plt.xlim((timesteps[0], timesteps[-1] - 3e3))
     plt.xlabel('Number of Timesteps', fontsize = 10)
     plt.ylabel('Beamforming gain', fontsize = 10)
     plt.title("Learning beamforming gains", fontsize = 12)
     plt.xticks(ticks = x_sticks, labels = x_labels, fontsize = 10)
     plt.yticks(fontsize = 10)
-    plt.legend(["A2C", "EGC"])
+    plt.legend(["A2C", "EGC", "Beam-steering codebook"])
     plt.grid()
     
     if saving:
@@ -90,5 +116,5 @@ def plot_beamforming_gains(log_folder: str = "logs/A2C", \
     
 
 if __name__ == "__main__":
-    plot_beamforming_gains(log_folder = "logs/A2C", channel_file = "data/channels.npy", saving = True)
-    plot_results(saving = True)
+    plot_beamforming_gains(log_folder = "logs/A2C", channel_file = "data/channels.npy", saving = False)
+    # plot_results(saving = True)

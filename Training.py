@@ -19,9 +19,9 @@ with open(r'data/parameters.json') as json_file:
 # Generate channels for certain parameters
 channels_dataset = DeepMIMO.generate_data(channel_parameters)
 
-# Extraction only channels with Line of Sight condition
-LoS_mask = np.where(channels_dataset[0]['user']['LoS'] == 1)[0]
-channels = channels_dataset[0]['user']['channel'][LoS_mask, :, :, :]
+# Extraction only channels with No Line of Sight condition
+nLoS_mask = np.where(channels_dataset[0]['user']['LoS'] == 0)[0]
+channels = channels_dataset[0]['user']['channel'][nLoS_mask, :, :, :]
 
 # Preprocessing tensor of channel matrices
 channels = np.squeeze(channels.mean(axis = 3))
@@ -31,7 +31,7 @@ channels = np.transpose(channels)
 # Create RL_model object
 M = 32
 N_p = 3
-H_ch = channels[:, 40][:, np.newaxis]
+H_ch = channels[:, 9][:, np.newaxis]
 logdir = "logs/A2C"
 models_dir = "models/A2C"
 

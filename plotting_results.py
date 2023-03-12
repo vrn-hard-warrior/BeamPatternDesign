@@ -5,6 +5,50 @@ import matplotlib.pyplot as plt
 from IPython.core.pylabtools import figsize
 
 
+def beam_pattern_plot(log_folder: str = "logs/A2C", n_timestep: int = 0, \
+                      channel_file: str = "data/channels.npy", \
+                      d_phi: float = 0.5, saving: bool = True) -> None:
+    """
+    Plotting beam pattern on certain timestep with learned weights.
+    """
+    weights = np.loadtxt(log_folder + "/weights.dat", dtype = np.complex128)
+    weights = weights[n_timestep].conj()
+    len_weigths = len(weights)
+    
+    # ideal weights computing
+    H = np.load(channel_file)
+    weights_ideal = np.squeeze((H / np.abs(H)).conj().T)
+    
+    phi = np.arange(-np.pi / 2, np.pi / 2, np.deg2rad(d_phi), dtype = np.float64)
+    
+    BP_RL = np.zeros_like(phi, dtype = np.complex128)
+    BP_ideal = np.zeros_like(phi, dtype = np.complex128)
+    for i in range(len(BP_RL)):
+        exps = np.array([np.exp(1j * np.pi * n * np.sin(phi[i])) \
+                         for n in range(len_weigths)], dtype = np.complex128)
+        
+        BP_RL[i] = np.matmul(weights, exps)
+        BP_ideal[i] = np.matmul(weights_ideal, exps)
+        
+    figsize(10, 4)
+    plt.plot(np.rad2deg(phi), 10 * np.log10(np.abs(BP_ideal)), color = 'k', alpha = 0.8, lw = 1.5)
+    plt.plot(np.rad2deg(phi), 10 * np.log10(np.abs(BP_RL)), color = 'r', linestyle = "dashed", alpha = 0.8, lw = 1.5)
+    plt.xlim((-90, 90))
+    plt.xlabel('Азимут, град.', fontsize = 10)
+    plt.ylabel('Усиление антенной решетки, дБ', fontsize = 10)
+    plt.title("Диаграмма направленности антенны", fontsize = 12)
+    plt.xticks(fontsize = 10)
+    plt.yticks(fontsize = 10)
+    plt.legend(["EGT", "RL"])
+    plt.grid()
+    
+    if saving:
+        plt.savefig("graphs/beam_patterns" + str(n_timestep) + "ts.pdf", format = "pdf", bbox_inches = "tight")
+        plt.close('all')
+    else:
+        plt.show()
+
+
 def equal_gain_combining(channel_file: str = "data/channels.npy") -> float:
     """
     Return array gain for certain channel using weights, computed by
@@ -68,6 +112,7 @@ def plot_results(log_folder: str = "logs/A2C", \
     
     if saving:
         plt.savefig("graphs/entropy_loss.pdf", format = "pdf", bbox_inches = "tight")
+        plt.close('all')
     else:
         plt.show()
 
@@ -99,22 +144,25 @@ def plot_beamforming_gains(log_folder: str = "logs/A2C", \
     figsize(10, 4)
     plt.plot(timesteps, gains, color = 'k', alpha = 0.8, lw = 1.5)
     plt.plot(timesteps, EGC_gains, color = 'b', linestyle = "dashed", alpha = 0.8, lw = 1.5)
-    plt.plot(timesteps, BSC_gains, color = 'g', linestyle = "dashed", alpha = 0.8, lw = 1.5)
+    plt.plot(timesteps, BSC_gains, color = 'g', linestyle = "dashdot", alpha = 0.8, lw = 1.5)
     plt.xlim((timesteps[0], timesteps[-1] - 3e3))
-    plt.xlabel('Number of Timesteps', fontsize = 10)
-    plt.ylabel('Beamforming gain', fontsize = 10)
-    plt.title("Learning beamforming gains", fontsize = 12)
+    plt.xlabel('Номер прецедента', fontsize = 10)
+    plt.ylabel('Усиление антенной решетки', fontsize = 10)
+    plt.title("Процесс обучения агента", fontsize = 12)
     plt.xticks(ticks = x_sticks, labels = x_labels, fontsize = 10)
     plt.yticks(fontsize = 10)
-    plt.legend(["A2C", "EGC", "Beam-steering codebook"])
+    plt.legend(["A2C", "EGT", "Beam-steering codebook"])
     plt.grid()
     
     if saving:
         plt.savefig("graphs/beamforming_gains.pdf", format = "pdf", bbox_inches = "tight")
+        plt.close('all')
     else:
         plt.show()
     
 
 if __name__ == "__main__":
-    plot_beamforming_gains(log_folder = "logs/A2C", channel_file = "data/channels.npy", saving = False)
-    # plot_results(saving = True)
+    plot_beamforming_gains(log_folder = "logs/A2C", channel_file = "data/channels.npy", saving = True)
+    plot_results(saving = True)
+    beam_pattern_plot(log_folder = "logs/A2C", n_timestep = 20000, channel_file = "data/channels.npy", \
+                      d_phi = 0.5, saving = True)

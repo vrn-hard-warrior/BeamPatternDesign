@@ -102,6 +102,7 @@ class SaveBeamformingGainsCallback(BaseCallback):
         self.check_freq = check_freq
         self.log_dir = log_dir
         self.beamforming_gains = []
+        self.weight_vec = []
         self.total_timesteps = []
         self.i = 0
     
@@ -109,9 +110,11 @@ class SaveBeamformingGainsCallback(BaseCallback):
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
             gain_i = self.training_env.get_attr("thres", [0])
+            weight_vec_i = self.training_env.get_attr("w_best", [0])
             
             self.i += self.check_freq
             self.beamforming_gains.append(gain_i)
+            self.weight_vec.append(weight_vec_i[0])
             self.total_timesteps.append(self.i)
             
         return True
@@ -121,9 +124,14 @@ class SaveBeamformingGainsCallback(BaseCallback):
         self.beamforming_gains = np.array(self.beamforming_gains, dtype = np.float64)
         self.total_timesteps = np.array(self.total_timesteps, dtype = np.int32)[:, np.newaxis]
         
+        self.weight_vec = list(map(np.squeeze, self.weight_vec))
+        self.weight_vec = np.array(self.weight_vec, dtype = np.complex128)
+        
         np.savetxt(self.log_dir + "/beamforming_gains.dat", \
                    np.concatenate((self.beamforming_gains, self.total_timesteps), axis = 1), \
                    fmt = '%.18e')
+        
+        np.savetxt(self.log_dir + "/weights.dat", self.weight_vec, fmt = '%.18e')
 
 
 # Example

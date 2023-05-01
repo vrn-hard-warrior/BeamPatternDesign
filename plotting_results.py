@@ -83,7 +83,7 @@ def beam_steering_codebook(channel_file: str = "data/channels.npy", \
     return gain
 
 
-def plot_results(log_folder: str = "logs/A2C", \
+def plot_results(log_folder: str = "logs/A2C_v0", \
                  filename: str = "progress.csv", \
                  yaxis: str = "train/entropy_loss", \
                  title: str = "Learning Curve",
@@ -159,10 +159,12 @@ def plot_beamforming_gains(log_folder: str = "logs/A2C", \
         plt.close('all')
     else:
         plt.show()
-    
+
 
 if __name__ == "__main__":
-    plot_beamforming_gains(log_folder = "logs/A2C", channel_file = "data/channels.npy", saving = True)
-    plot_results(saving = True)
-    beam_pattern_plot(log_folder = "logs/A2C", n_timestep = 20000, channel_file = "data/channels.npy", \
-                      d_phi = 0.5, saving = True)
+    plot_beamforming_gains(log_folder = "logs/A2C_v2", \
+                           channel_file = "models/A2C_v2/channels.npy", saving = False)
+    plot_results(log_folder = "logs/A2C_v2", saving = False)
+    beam_pattern_plot(log_folder = "logs/A2C_v2", n_timestep = 40000, \
+                      channel_file = "models/A2C_v2/channels.npy", \
+                      d_phi = 0.5, saving = False)

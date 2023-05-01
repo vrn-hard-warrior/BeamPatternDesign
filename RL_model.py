@@ -50,40 +50,32 @@ class RL_model(gym.Env):
         
         self.h = self.H_ch[:, np.random.choice(self.H_ch.shape[1])]
         
-        w_mask = np.random.choice(len(self.phases), size = (self.M, 1))
-        self.w_best = np.exp(1j * w_mask * self.phase_shift)
+        w_mask = np.random.choice(len(self.phases), size = (self.M,))
+        w_best = np.exp(1j * w_mask * self.phase_shift)
         
-        self.thres = np.abs(np.dot(self.w_best.conj().T, self.h)) ** 2
-        self.g_old = 0
+        self.g_old = np.abs(np.dot(w_best.conj().T, self.h)) ** 2
         
-        return np.squeeze(w_mask.astype(np.int8), axis = 1)
+        return w_mask.astype(np.int8)
 
 
     def step(self, action: np.array) -> (np.array, np.int8, bool, dict):
         w = np.exp(1j * action * self.phase_shift)
         observation = action
         
-        g = np.abs(np.dot(w.conj().T, self.h)) ** 2
+        self.g = np.abs(np.dot(w.conj().T, self.h)) ** 2
         
         self.interactions_n += 1
         
-        if g > self.thres:
-            reward = 1
-            
-            self.thres = g
-            self.w_best = w
-        elif g > self.g_old:
-            reward = 0
-        else:
-            reward = -1
+        reward = self.g - self.g_old
         
-        self.g_old = g
+        self.g_old = self.g
+        self.w = w
         
         if self.interactions_n == self.max_interactions:
             self.done = True
         
         # Only for debugging and collection statistical data
-        info = {"Betta": self.thres, "W": w, "W_best": self.w_best}
+        info = {"W": w}
         
         return observation, reward, self.done, info
 
@@ -109,8 +101,8 @@ class SaveBeamformingGainsCallback(BaseCallback):
     
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
-            gain_i = self.training_env.get_attr("thres", [0])
-            weight_vec_i = self.training_env.get_attr("w_best", [0])
+            gain_i = self.training_env.get_attr("g", [0])
+            weight_vec_i = self.training_env.get_attr("w", [0])
             
             self.i += self.check_freq
             self.beamforming_gains.append(gain_i)

@@ -89,13 +89,15 @@ class SaveBeamformingGainsCallback(BaseCallback):
     """
     Save best beamforming gains on certain intervals through learning.
     """
-    def __init__(self, check_freq: np.int16, log_dir: str, verbose = 1):
+    def __init__(self, check_freq: np.uint16, n_steps: np.uint16, log_dir: str, verbose = 1):
         super(SaveBeamformingGainsCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.log_dir = log_dir
         self.beamforming_gains = []
+        self.mean_rewards = []
         self.weight_vec = []
         self.total_timesteps = []
+        self.n_steps = n_steps
         self.i = 0
     
     
@@ -108,12 +110,18 @@ class SaveBeamformingGainsCallback(BaseCallback):
             self.beamforming_gains.append(gain_i)
             self.weight_vec.append(weight_vec_i[0])
             self.total_timesteps.append(self.i)
+        
+        if self.n_calls % self.n_steps == 0:
+            mean_reward = getattr(self.model.rollout_buffer, "R_mean")
             
+            self.mean_rewards.append(mean_reward)
+        
         return True
     
     
     def _on_training_end(self) -> None:
         self.beamforming_gains = np.array(self.beamforming_gains, dtype = np.float64)
+        self.mean_rewards = np.array(self.mean_rewards, dtype = np.float64)
         self.total_timesteps = np.array(self.total_timesteps, dtype = np.int32)[:, np.newaxis]
         
         self.weight_vec = list(map(np.squeeze, self.weight_vec))
@@ -121,6 +129,11 @@ class SaveBeamformingGainsCallback(BaseCallback):
         
         np.savetxt(self.log_dir + "/beamforming_gains.dat", \
                    np.concatenate((self.beamforming_gains, self.total_timesteps), axis = 1), \
+                   fmt = '%.18e')
+            
+        np.savetxt(self.log_dir + "/mean_rewards.dat", \
+                   np.concatenate((self.mean_rewards[:, np.newaxis], \
+                   self.total_timesteps[::self.n_steps]), axis = 1), \
                    fmt = '%.18e')
         
         np.savetxt(self.log_dir + "/weights.dat", self.weight_vec, fmt = '%.18e')

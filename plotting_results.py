@@ -43,7 +43,7 @@ def beam_pattern_plot(log_folder: str = "logs/A2C", n_timestep: int = 0, \
     plt.grid()
     
     if saving:
-        plt.savefig("graphs/beam_patterns" + str(n_timestep) + "ts.pdf", format = "pdf", bbox_inches = "tight")
+        plt.savefig("graphs/" + log_folder[5:] + "/beam_patterns" + str(n_timestep) + "ts.pdf", format = "pdf", bbox_inches = "tight")
         plt.close('all')
     else:
         plt.show()
@@ -111,7 +111,7 @@ def plot_results(log_folder: str = "logs/A2C_v0", \
     plt.grid()
     
     if saving:
-        plt.savefig("graphs/entropy_loss.pdf", format = "pdf", bbox_inches = "tight")
+        plt.savefig("graphs/" + log_folder[5:] + "/entropy_loss.pdf", format = "pdf", bbox_inches = "tight")
         plt.close('all')
     else:
         plt.show()
@@ -155,16 +155,16 @@ def plot_beamforming_gains(log_folder: str = "logs/A2C", \
     plt.grid()
     
     if saving:
-        plt.savefig("graphs/beamforming_gains.pdf", format = "pdf", bbox_inches = "tight")
+        plt.savefig("graphs/" + log_folder[5:] + "/beamforming_gains.pdf", format = "pdf", bbox_inches = "tight")
         plt.close('all')
     else:
         plt.show()
 
 
 if __name__ == "__main__":
-    plot_beamforming_gains(log_folder = "logs/A2C_v2", \
-                           channel_file = "models/A2C_v2/channels.npy", saving = False)
-    plot_results(log_folder = "logs/A2C_v2", saving = False)
-    beam_pattern_plot(log_folder = "logs/A2C_v2", n_timestep = 40000, \
-                      channel_file = "models/A2C_v2/channels.npy", \
+    plot_beamforming_gains(log_folder = "logs/A2C_v3", \
+                           channel_file = "models/A2C_v3/channels.npy", saving = False)
+    plot_results(log_folder = "logs/A2C_v3", saving = False)
+    beam_pattern_plot(log_folder = "logs/A2C_v3", n_timestep = 40000, \
+                      channel_file = "models/A2C_v3/channels.npy", \
                       d_phi = 0.5, saving = False)
